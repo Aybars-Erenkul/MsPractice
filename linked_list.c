@@ -41,14 +41,14 @@ int main(){
 	list *test;
 	
 	while(1){
-		printf("\n\nSelect an option:\n\n\n");
+		printf("\n\n 			Select an option:\n\n\n");
 		printf("[1]Set List\n");
 		printf("[2]Print List\n");
 		printf("[3]Add to List\n");
 		scanf("\n%d", &select);
 		if (select == 1)
 		{
-			printf("Select List:");
+			printf(" 			Select List:");
 			printf("\n[1]Cars\n[2]Bikes\n");
 			scanf("%d", &s_list);
 			printf("Enter the node number of the new list: ");
@@ -57,7 +57,7 @@ int main(){
 		}
 		else if (select == 2)
 		{
-			printf("[SELECT THE LIST TO BE PRINTED]\n");
+			printf(" 			[SELECT THE LIST TO BE PRINTED]\n");
 			printf("\n[1]Cars\n[2]Bikes\n");
 			scanf("%d", &s_list);
 			printList(s_list);
@@ -65,7 +65,7 @@ int main(){
 		}
 		else if (select == 3)
 		{
-			printf("[SELECT THE LIST TO BE APPENDED]\n");
+			printf(" 			[SELECT THE LIST TO BE APPENDED]\n");
 			printf("\n[1]Cars\n[2]Bikes\n");
 			scanf("%d", &s_list);
 			printf("How many nodes to add? ");
@@ -106,7 +106,7 @@ void createList(int s_list, int n){
 		newNode = (list*)malloc(sizeof(list));
 
 		if(newNode == NULL){
-			printf("Cannot Allocate Memory.\n");
+			printf(" 			Cannot Allocate Memory.\n");
 			break;
 		}
 
@@ -223,7 +223,7 @@ void appendList(int c, int nodes){
 		second *temp;
 
 		if(s_head == NULL){
-      	  printf("The list is empty. Please set the list first.\n");
+      	  printf(" 			The list is empty. Please set the list first.\n");
       	  exit(0);
     	}
 
