@@ -43,8 +43,10 @@
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
+UART_HandleTypeDef huart6;
+
 /* USER CODE BEGIN PV */
-uint16_t rawData[1];
+volatile uint16_t adcRawData[1];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -52,6 +54,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_USART6_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -91,14 +94,65 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_ADC1_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  uint8_t errorMsg[50]={'\0'};
+  uint8_t input[100]={'\0'};
+  uint8_t adcData[50]={'\0'};
+  uint8_t adcVoltage[50]={'\0'};
+  uint16_t X=0;
+  uint16_t voltage[1];
+  char answer[10]={'\0'};
+  HAL_ADC_Start_DMA(&hadc1, adcRawData, 1);
+ // HAL_ADC_Stop_DMA(&hadc1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  X = 0;
+	  answer[0]='\0';
+	  while(answer[0] == '\0'){
+		  HAL_UART_Receive(&huart6, answer, sizeof(answer), 1000);
+		  sprintf(input, "Press 'a' to get ADC value or press 'v' to get voltage value %c\n", X, answer[0]);
+		  HAL_UART_Transmit(&huart6, input, sizeof(input), 100);
+		  HAL_Delay(500);
+
+
+	  while(answer[0] == 'a'){
+		  sprintf(adcData, "[%d] ADC Value = %d\n", X, adcRawData[0]);
+		  HAL_UART_Transmit(&huart6, adcData, sizeof(adcData), 100);
+		  X++;
+		  HAL_Delay(500);
+		  HAL_UART_Receive(&huart6, answer, sizeof(answer), 250);
+		  if(answer[0] == 'q'){
+			  break;
+		  }
+	  }
+	  while(answer[0] == 'v'){
+		  voltage[0] = (adcRawData[0] * 3.3)/4095;
+		  sprintf(adcVoltage, "[%d] Voltage Value = %d\n", X, voltage[0]);
+		  HAL_UART_Transmit(&huart6, adcVoltage, sizeof(adcVoltage), 100);
+		  X++;
+		  HAL_Delay(500);
+		  HAL_UART_Receive(&huart6, answer, sizeof(answer), 250);
+		  if(answer[0] == 'q'){
+			  break;
+		  }
+	  }
+	  if(answer[0] != 'a' && answer[0] !='v' && answer[0] != '\0' && answer[0] != 'q'){
+		  sprintf(errorMsg, "Invalid input. Please try again.\n");
+		  HAL_UART_Transmit(&huart6, errorMsg, sizeof(errorMsg),250);
+		  answer[0] = '\0';
+		  continue;
+	  }
+
+	  }
+	  //sprintf(data, "Hello! Tracing %d, ADC Value = %d\n", X, adcRawData[0]);
+	 // HAL_UART_Transmit(&huart6, data, sizeof(data), 100);
+	 // HAL_Delay(250);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -122,12 +176,11 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 168;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
@@ -170,7 +223,7 @@ static void MX_ADC1_Init(void)
   /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
   */
   hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = DISABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
@@ -195,8 +248,41 @@ static void MX_ADC1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN ADC1_Init 2 */
-HAL_ADC_Start_DMA(&hadc1, rawData, 1);
+
   /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
+  * @brief USART6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART6_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART6_Init 0 */
+
+  /* USER CODE END USART6_Init 0 */
+
+  /* USER CODE BEGIN USART6_Init 1 */
+
+  /* USER CODE END USART6_Init 1 */
+  huart6.Instance = USART6;
+  huart6.Init.BaudRate = 9600;
+  huart6.Init.WordLength = UART_WORDLENGTH_8B;
+  huart6.Init.StopBits = UART_STOPBITS_1;
+  huart6.Init.Parity = UART_PARITY_NONE;
+  huart6.Init.Mode = UART_MODE_TX_RX;
+  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART6_Init 2 */
+
+  /* USER CODE END USART6_Init 2 */
 
 }
 
@@ -211,7 +297,7 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA2_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
 }
@@ -225,9 +311,9 @@ static void MX_GPIO_Init(void)
 {
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOG_CLK_ENABLE();
 
 }
 
